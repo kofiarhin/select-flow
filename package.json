@@ -7,11 +7,7 @@
     "start": "node server/server.js",
     "server": "nodemon server/server.js",
     "client": "npm run dev --prefix client",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "test": "jest --coverage",
-    "test:e2e": "playwright test --config=e2e/playwright.config.js",
-    "postinstall": "npm run install:client",
-    "install:client": "npm install --prefix client"
+    "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.888.0",
