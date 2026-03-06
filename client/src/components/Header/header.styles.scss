@@ -223,3 +223,35 @@
     display: none !important;
   }
 }
+
+/* Logout buttons */
+.nav__logout {
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav__logoutText {
+  display: inline-block;
+}
+
+.nav__logoutIcon {
+  font-size: 14px;
+}
+
+.sidenav__logout {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sidenav__logoutIcon {
+  font-size: 14px;
+}

@@ -13,46 +13,28 @@ body {
 .grid {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
 }
 .card {
-  padding: 12px;
   background: white;
+  padding: 12px;
   border-radius: 8px;
-  text-decoration: none;
-  color: #222;
-  display: flex;
-  flex-direction: column;
-}
-img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-.thumb {
-  border: 2px solid transparent;
-  padding: 0;
-  background: transparent;
-}
-.thumb.active {
-  border-color: #2d7;
+  border: 1px solid #eee;
 }
 .auth-form {
   max-width: 360px;
-  margin: 32px auto;
+  margin: 40px auto;
   background: white;
-  padding: 20px;
+  padding: 16px;
   border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  border: 1px solid #eee;
+  display: grid;
+  gap: 8px;
 }
 
-.heading {
-  font-size: 1.2rem;
-  l &.center {
-    text-align: center;
-  }
+.page-loading {
+  padding: 24px 16px;
+  text-align: center;
+  color: #222;
 }
