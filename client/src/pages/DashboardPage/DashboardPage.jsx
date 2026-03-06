@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useCreateProject, useProjects } from "../hooks/useProjects";
+import { useCreateProject, useProjects } from "../../hooks/useProjects";
 
 const DashboardPage = () => {
   const { data = [] } = useProjects();

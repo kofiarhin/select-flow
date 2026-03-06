@@ -1,9 +1,9 @@
 import { Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import ProjectPage from "./pages/ProjectPage";
-import GalleryPage from "./pages/GalleryPage";
+import DashboardPage from "./pages/DashboardPage/DashboardPage";
+import ProjectPage from "./pages/ProjectPage/ProjectPage";
+import GalleryPage from "./pages/GalleryPage/GalleryPage";
 import Home from "./pages/Home/Home";
 import Header from "./components/Header/Header";
 import RequireAuth from "./components/auth/RequireAuth";
