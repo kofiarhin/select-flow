@@ -2,13 +2,22 @@ import { useEffect } from "react";
 
 const Home = () => {
   useEffect(() => {
-    const getHealth = async () => {
-      const url = "http://localhost:5000/api/health";
-      const res = await fetch(url);
-      console.log(res.ok);
-    };
-    getHealth();
+    if (!import.meta.env.DEV) return;
+
+    const ctrl = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/health", { signal: ctrl.signal });
+        if (import.meta.env.DEV) console.log("health:", res.ok);
+      } catch (err) {
+        if (err?.name !== "AbortError") console.log("health error:", err);
+      }
+    })();
+
+    return () => ctrl.abort();
   }, []);
+
   return (
     <div>
       <h1 className="heading center">Home</h1>

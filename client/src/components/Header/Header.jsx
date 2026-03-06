@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
 import "./header.styles.scss";
 
 const Header = () => {
@@ -7,12 +9,10 @@ const Header = () => {
   const location = useLocation();
 
   const isClientGallery = useMemo(() => {
-    // hides nav on client gallery route (optional)
     return location.pathname.startsWith("/gallery/");
   }, [location.pathname]);
 
   useEffect(() => {
-    // close menu on route change
     setOpen(false);
   }, [location.pathname]);
 
@@ -25,19 +25,19 @@ const Header = () => {
           SelectFlow
         </NavLink>
 
+        {/* Mobile toggle (FontAwesomeIcon) */}
         <button
-          className="nav__toggle"
+          className="nav__iconBtn"
           type="button"
           aria-label="Toggle navigation"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="nav__bar" />
-          <span className="nav__bar" />
-          <span className="nav__bar" />
+          <FontAwesomeIcon icon={open ? faXmark : faBars} />
         </button>
 
-        <nav className={`nav__menu ${open ? "nav__menu--open" : ""}`}>
+        {/* Desktop nav */}
+        <nav className="nav__menu nav__menu--desktop" aria-label="Main">
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -79,6 +79,70 @@ const Header = () => {
           </NavLink>
         </nav>
       </div>
+
+      {/* Backdrop */}
+      <div
+        className={`nav__backdrop ${open ? "nav__backdrop--show" : ""}`}
+        onClick={() => setOpen(false)}
+      />
+
+      {/* Mobile side nav */}
+      <aside className={`sidenav ${open ? "sidenav--open" : ""}`}>
+        <div className="sidenav__top">
+          <span className="sidenav__brand">SelectFlow</span>
+
+          <button
+            className="sidenav__close"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setOpen(false)}
+          >
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+
+        <nav className="sidenav__links" aria-label="Mobile">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `sidenav__link ${isActive ? "sidenav__link--active" : ""}`
+            }
+          >
+            Home
+          </NavLink>
+
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `sidenav__link ${isActive ? "sidenav__link--active" : ""}`
+            }
+          >
+            Dashboard
+          </NavLink>
+
+          <div className="sidenav__divider" />
+
+          <NavLink
+            to="/login"
+            className={({ isActive }) =>
+              `sidenav__link ${isActive ? "sidenav__link--active" : ""}`
+            }
+          >
+            Login
+          </NavLink>
+
+          <NavLink
+            to="/register"
+            className={({ isActive }) =>
+              `sidenav__link sidenav__link--primary ${
+                isActive ? "sidenav__link--active" : ""
+              }`
+            }
+          >
+            Sign up
+          </NavLink>
+        </nav>
+      </aside>
     </header>
   );
 };
