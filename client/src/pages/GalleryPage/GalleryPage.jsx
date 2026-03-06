@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useGallery, useSaveSelection } from "../../hooks/useGallery";
 import "./GalleryPage.styles.scss";
+
+const arraysMatch = (a = [], b = []) =>
+  a.length === b.length && a.every((item, index) => item === b[index]);
 
 const GalleryPage = () => {
   const { clientAccessToken } = useParams();
@@ -16,6 +19,18 @@ const GalleryPage = () => {
   const { project, images } = data;
   const isFinal = project.status === "FINAL_DELIVERED";
   const apiUrl = import.meta.env.VITE_API_URL || "";
+
+  const persistedSelectedIds = useMemo(
+    () => images.filter((img) => img.isSelected).map((img) => img._id),
+    [images],
+  );
+
+  useEffect(() => {
+    setSelected((prev) =>
+      arraysMatch(prev, persistedSelectedIds) ? prev : persistedSelectedIds,
+    );
+  }, [persistedSelectedIds]);
+
   const imageCountLabel = `${images.length} image${images.length === 1 ? "" : "s"}`;
 
   const toggleSelection = (imageId) => {
@@ -32,6 +47,7 @@ const GalleryPage = () => {
     const filename = (isFinal ? img.storagePath : img.previewPath)
       ?.split("/")
       .pop();
+
     const assetType = isFinal ? "finals" : "previews";
 
     if (!filename) return "";
@@ -40,7 +56,7 @@ const GalleryPage = () => {
   };
 
   const handleSaveSelection = () => {
-    if (!selected.length || save.isPending) return;
+    if (save.isPending || isFinal) return;
     save.mutate(selected);
   };
 
@@ -103,7 +119,7 @@ const GalleryPage = () => {
                 type="button"
                 className="gallery-page__primary-btn"
                 onClick={handleSaveSelection}
-                disabled={!selected.length || save.isPending}
+                disabled={save.isPending}
               >
                 {save.isPending
                   ? "Saving..."
@@ -119,6 +135,12 @@ const GalleryPage = () => {
             )}
           </div>
         </div>
+
+        {save.isSuccess && !isFinal && (
+          <div className="gallery-page__save-feedback">
+            Selection saved successfully.
+          </div>
+        )}
 
         {images.length ? (
           <div className="gallery-page__grid">
