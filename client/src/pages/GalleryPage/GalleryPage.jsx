@@ -8,16 +8,13 @@ const arraysMatch = (a = [], b = []) =>
 
 const GalleryPage = () => {
   const { clientAccessToken } = useParams();
-  const { data } = useGallery(clientAccessToken);
+  const { data, isLoading, isError, error } = useGallery(clientAccessToken);
   const save = useSaveSelection(clientAccessToken);
   const [selected, setSelected] = useState([]);
 
-  if (!data) {
-    return <div className="gallery-page__loading">Loading...</div>;
-  }
-
-  const { project, images } = data;
-  const isFinal = project.status === "FINAL_DELIVERED";
+  const project = data?.project ?? null;
+  const images = data?.images ?? [];
+  const isFinal = project?.status === "FINAL_DELIVERED";
   const apiUrl = import.meta.env.VITE_API_URL || "";
 
   const persistedSelectedIds = useMemo(
@@ -44,6 +41,8 @@ const GalleryPage = () => {
   };
 
   const getImageSrc = (img) => {
+    if (!project) return "";
+
     const filename = (isFinal ? img.storagePath : img.previewPath)
       ?.split("/")
       .pop();
@@ -59,6 +58,28 @@ const GalleryPage = () => {
     if (save.isPending || isFinal) return;
     save.mutate(selected);
   };
+
+  if (isLoading) {
+    return <div className="gallery-page__loading">Loading...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div className="gallery-page__empty">
+        <h2>Unable to load gallery</h2>
+        <p>{error?.response?.data?.message || "Something went wrong."}</p>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="gallery-page__empty">
+        <h2>Gallery not found</h2>
+        <p>This gallery is unavailable or the access link is invalid.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="gallery-page">
