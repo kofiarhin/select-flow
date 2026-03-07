@@ -6,6 +6,7 @@ const {
   patchStatus,
   uploadOriginals,
   uploadFinals,
+  deleteProject,
   downloadSelected
 } = require('../controllers/projectController');
 const { requireAuth } = require('../middleware/authMiddleware');
@@ -18,6 +19,7 @@ router.post('/', createProject);
 router.get('/', listProjects);
 router.get('/:id', getProject);
 router.patch('/:id/status', patchStatus);
+router.delete('/:id', deleteProject);
 router.post('/:id/upload/originals', uploadLimiter, upload.array('files', 500), uploadOriginals);
 router.post('/:id/upload/finals', uploadLimiter, upload.array('files', 500), uploadFinals);
 router.get('/:id/download/selected', downloadSelected);

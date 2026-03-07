@@ -44,4 +44,22 @@ const useUploadProjectFiles = (id, route) => {
   });
 };
 
-export { useProjects, useCreateProject, useProject, useUploadProjectFiles };
+const useDeleteProject = (id) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => (await api.delete(`/api/projects/${id}`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+    },
+  });
+};
+
+export {
+  useProjects,
+  useCreateProject,
+  useProject,
+  useUploadProjectFiles,
+  useDeleteProject,
+};

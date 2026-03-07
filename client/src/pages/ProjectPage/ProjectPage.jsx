@@ -1,18 +1,35 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { useProject, useUploadProjectFiles } from "../../hooks/useProjects";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  useDeleteProject,
+  useProject,
+  useUploadProjectFiles,
+} from "../../hooks/useProjects";
 import api from "../../services/api";
 import "./projectPage.styles.scss";
 
 const ProjectPage = () => {
   const { id } = useParams();
-  const { data } = useProject(id);
+  const navigate = useNavigate();
+  const { data, isLoading, isError, error } = useProject(id);
   const uploadOriginals = useUploadProjectFiles(id, "originals");
   const uploadFinals = useUploadProjectFiles(id, "finals");
+  const deleteProject = useDeleteProject(id);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+
+  if (isLoading) {
+    return <div className="project-page__loading">Loading...</div>;
+  }
+
+  if (isError) {
+    const message = error?.response?.data?.message || "Project not found.";
+    return <div className="project-page__loading">{message}</div>;
+  }
 
   if (!data) {
-    return <div className="project-page__loading">Loading...</div>;
+    return <div className="project-page__loading">Project not found.</div>;
   }
 
   const { project, images, selectedOriginals = [], selectedCount = 0 } = data;
@@ -75,11 +92,25 @@ const ProjectPage = () => {
       link.remove();
 
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Download selected failed:", error);
+    } catch (downloadError) {
+      console.error("Download selected failed:", downloadError);
       alert("Unable to download selected files.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (deleteText !== project.name || deleteProject.isPending) return;
+
+    try {
+      await deleteProject.mutateAsync();
+      navigate("/dashboard", {
+        replace: true,
+        state: { successMessage: "Project deleted permanently." },
+      });
+    } catch (deleteError) {
+      console.error("Project delete failed:", deleteError);
     }
   };
 
@@ -103,9 +134,7 @@ const ProjectPage = () => {
                 <span className="project-page__meta-label">
                   Client Selections
                 </span>
-                <span className="project-page__meta-value">
-                  {selectedCount}
-                </span>
+                <span className="project-page__meta-value">{selectedCount}</span>
               </div>
 
               <div className="project-page__meta-item">
@@ -117,9 +146,7 @@ const ProjectPage = () => {
 
               <div className="project-page__meta-item">
                 <span className="project-page__meta-label">Finals</span>
-                <span className="project-page__meta-value">
-                  {finals.length}
-                </span>
+                <span className="project-page__meta-value">{finals.length}</span>
               </div>
             </div>
           </div>
@@ -176,6 +203,77 @@ const ProjectPage = () => {
               onChange={(e) => upload(e, uploadFinals)}
             />
           </label>
+        </section>
+
+        <section className="project-page__danger-zone">
+          <div className="project-page__danger-head">
+            <h2>Danger Zone</h2>
+            <button
+              type="button"
+              className="project-page__delete-trigger"
+              onClick={() => {
+                if (deleteProject.isPending) return;
+                setShowDeleteConfirm((prev) => !prev);
+                setDeleteText("");
+              }}
+              disabled={deleteProject.isPending}
+            >
+              Delete Project
+            </button>
+          </div>
+
+          {showDeleteConfirm && (
+            <div className="project-page__delete-confirmation">
+              <p className="project-page__delete-warning">
+                This permanently deletes project details, previews, finals,
+                selections, original files, and related stored files. This action
+                cannot be undone.
+              </p>
+
+              <label className="project-page__delete-label" htmlFor="delete-name">
+                Type <strong>{project.name}</strong> to confirm.
+              </label>
+              <input
+                id="delete-name"
+                className="project-page__delete-input"
+                value={deleteText}
+                onChange={(e) => setDeleteText(e.target.value)}
+                autoComplete="off"
+              />
+
+              {deleteProject.isError && (
+                <p className="project-page__delete-error">
+                  {deleteProject.error?.response?.data?.message ||
+                    "Unable to delete project right now."}
+                </p>
+              )}
+
+              <div className="project-page__delete-actions">
+                <button
+                  type="button"
+                  className="project-page__delete-cancel"
+                  onClick={() => {
+                    if (deleteProject.isPending) return;
+                    setShowDeleteConfirm(false);
+                    setDeleteText("");
+                  }}
+                  disabled={deleteProject.isPending}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="project-page__delete-confirm"
+                  onClick={handleDeleteProject}
+                  disabled={deleteText !== project.name || deleteProject.isPending}
+                >
+                  {deleteProject.isPending
+                    ? "Deleting Project..."
+                    : "Permanently Delete"}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="project-page__section">

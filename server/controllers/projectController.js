@@ -4,6 +4,7 @@ const Image = require("../models/Image");
 const { generateClientToken } = require("../utils/tokens");
 const { ok } = require("../utils/apiResponse");
 const { failValidation } = require("../middleware/validate");
+const { logger } = require("../utils/logger");
 const { PROJECT_STATUSES } = ProjectModel;
 const { streamZip } = require("../services/zipService");
 const {
@@ -13,7 +14,7 @@ const {
   uniqueName,
   ext,
 } = require("../utils/files");
-const { writeFile } = require("../services/storageService");
+const { writeFile, deleteFile } = require("../services/storageService");
 const { generateJpegPreview } = require("../services/imageService");
 
 const { Project } = ProjectModel;
@@ -182,6 +183,68 @@ const uploadFinals = async (req, res, next) => {
   }
 };
 
+const deleteProject = async (req, res, next) => {
+  if (!req.params.id) return failValidation(res, "id", "id is required");
+
+  try {
+    const project = await Project.findOne({
+      _id: req.params.id,
+      photographerId: req.user._id,
+    });
+
+    if (!project)
+      return next({
+        status: 404,
+        message: "Project not found",
+        code: "NOT_FOUND",
+      });
+
+    const images = await Image.find({ projectId: project._id });
+    const filePaths = new Set();
+
+    images.forEach((image) => {
+      if (image.storagePath) filePaths.add(image.storagePath);
+      if (image.previewPath) filePaths.add(image.previewPath);
+    });
+
+    for (const filePath of filePaths) {
+      try {
+        await deleteFile(filePath);
+      } catch (error) {
+        logger.error(
+          {
+            projectId: String(project._id),
+            filePath,
+            error: error.message,
+          },
+          "Project hard delete aborted: file cleanup failed",
+        );
+        return next({
+          status: 500,
+          message: "Failed to delete project files",
+          code: "FILE_DELETE_FAILED",
+        });
+      }
+    }
+
+    await Image.deleteMany({ projectId: project._id });
+    await Project.deleteOne({ _id: project._id });
+
+    logger.info(
+      { projectId: String(project._id), deletedImageCount: images.length },
+      "Project hard deleted",
+    );
+
+    return ok(
+      res,
+      { id: String(project._id) },
+      "Project and related files deleted permanently",
+    );
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const downloadSelected = async (req, res, next) => {
   try {
     const project = await Project.findOne({
@@ -222,5 +285,6 @@ module.exports = {
   patchStatus,
   uploadOriginals,
   uploadFinals,
+  deleteProject,
   downloadSelected,
 };
