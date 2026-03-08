@@ -215,29 +215,7 @@ const ProjectPage = () => {
               </a>
             </div>
 
-            <button
-              type="button"
-              className={`project-page__download-btn ${
-                !selectedCount ? "project-page__download-btn--disabled" : ""
-              }`}
-              disabled={!selectedCount || isDownloading}
-              onClick={handleDownloadSelected}
-            >
-              {isDownloading ? "Preparing Download..." : "Download Selected ZIP"}
-            </button>
 
-            {isSelectionSubmitted && project.status !== "FINAL_DELIVERED" && (
-              <button
-                type="button"
-                className="project-page__reopen-btn"
-                onClick={handleReopenSelection}
-                disabled={reopenSelection.isPending}
-              >
-                {reopenSelection.isPending
-                  ? "Reopening..."
-                  : "Reopen Selection"}
-              </button>
-            )}
           </div>
         </section>
 
@@ -344,7 +322,31 @@ const ProjectPage = () => {
               <p className="project-page__section-kicker">Priority</p>
               <h2>Selected By Client</h2>
             </div>
-            <span>{selectedOriginals.length} image(s)</span>
+            <div className="project-page__selected-head-actions">
+              <span className="project-page__section-count">
+                {selectedOriginals.length} image(s)
+              </span>
+              <button
+                type="button"
+                className={`project-page__download-btn ${
+                  !selectedCount ? "project-page__download-btn--disabled" : ""
+                }`}
+                disabled={!selectedCount || isDownloading}
+                onClick={handleDownloadSelected}
+              >
+                {isDownloading ? "Preparing Download..." : "Download Selected ZIP"}
+              </button>
+              {isSelectionSubmitted && project.status !== "FINAL_DELIVERED" && (
+                <button
+                  type="button"
+                  className="project-page__reopen-btn"
+                  onClick={handleReopenSelection}
+                  disabled={reopenSelection.isPending}
+                >
+                  {reopenSelection.isPending ? "Reopening..." : "Reopen Selection"}
+                </button>
+              )}
+            </div>
           </div>
 
           {selectedOriginals.length ? (
@@ -394,7 +396,7 @@ const ProjectPage = () => {
               <p className="project-page__section-kicker">Library</p>
               <h2>Originals</h2>
             </div>
-            <span>{originals.length} image(s)</span>
+            <span className="project-page__section-count">{originals.length} image(s)</span>
           </div>
 
           {originals.length ? (
@@ -443,7 +445,7 @@ const ProjectPage = () => {
               <p className="project-page__section-kicker">Delivery</p>
               <h2>Finals</h2>
             </div>
-            <span>{finals.length} image(s)</span>
+            <span className="project-page__section-count">{finals.length} image(s)</span>
           </div>
 
           {finals.length ? (
