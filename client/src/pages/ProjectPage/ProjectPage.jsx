@@ -6,6 +6,7 @@ import {
   useUploadProjectFiles,
 } from "../../hooks/useProjects";
 import api from "../../services/api";
+import ImageLightbox from "../../components/ImageLightbox/ImageLightbox";
 import "./projectPage.styles.scss";
 
 const ProjectPage = () => {
@@ -18,6 +19,9 @@ const ProjectPage = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteText, setDeleteText] = useState("");
+  const [lightboxImages, setLightboxImages] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   if (isLoading) {
     return <div className="project-page__loading">Loading...</div>;
@@ -69,6 +73,25 @@ const ProjectPage = () => {
     if (!storageFile) return "";
 
     return `${API_URL}/api/assets/finals/${project._id}/${storageFile}?token=${project.clientAccessToken}`;
+  };
+
+  const openSectionLightbox = (sectionImages, imageId, srcGetter, fallbackLabel) => {
+    const mapped = sectionImages
+      .map((img) => ({
+        id: img._id,
+        src: srcGetter(img),
+        label: img.originalFilename || fallbackLabel,
+        alt: img.originalFilename || fallbackLabel,
+      }))
+      .filter((img) => Boolean(img.src));
+
+    if (!mapped.length) return;
+
+    const selectedIndex = mapped.findIndex((img) => img.id === imageId);
+
+    setLightboxImages(mapped);
+    setLightboxIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setIsLightboxOpen(true);
   };
 
   const handleDownloadSelected = async () => {
@@ -292,12 +315,25 @@ const ProjectPage = () => {
                   className="project-page__thumb-card project-page__thumb-card--selected"
                   key={img._id}
                 >
-                  <img
-                    className="project-page__thumb"
-                    src={getOriginalSrc(img)}
-                    alt={img.originalFilename || "Selected original upload"}
-                    loading="lazy"
-                  />
+                  <button
+                    type="button"
+                    className="project-page__thumb-button"
+                    onClick={() =>
+                      openSectionLightbox(
+                        selectedOriginals,
+                        img._id,
+                        getOriginalSrc,
+                        "Selected original",
+                      )
+                    }
+                  >
+                    <img
+                      className="project-page__thumb"
+                      src={getOriginalSrc(img)}
+                      alt={img.originalFilename || "Selected original upload"}
+                      loading="lazy"
+                    />
+                  </button>
                   <div className="project-page__thumb-overlay">
                     <span className="project-page__selection-badge">
                       Selected
@@ -329,12 +365,25 @@ const ProjectPage = () => {
             <div className="project-page__grid">
               {originals.map((img) => (
                 <div className="project-page__thumb-card" key={img._id}>
-                  <img
-                    className="project-page__thumb"
-                    src={getOriginalSrc(img)}
-                    alt={img.originalFilename || "Original upload"}
-                    loading="lazy"
-                  />
+                  <button
+                    type="button"
+                    className="project-page__thumb-button"
+                    onClick={() =>
+                      openSectionLightbox(
+                        originals,
+                        img._id,
+                        getOriginalSrc,
+                        "Original image",
+                      )
+                    }
+                  >
+                    <img
+                      className="project-page__thumb"
+                      src={getOriginalSrc(img)}
+                      alt={img.originalFilename || "Original upload"}
+                      loading="lazy"
+                    />
+                  </button>
                   <div className="project-page__thumb-overlay">
                     {img.isSelected && (
                       <span className="project-page__selection-badge">
@@ -368,12 +417,25 @@ const ProjectPage = () => {
             <div className="project-page__grid">
               {finals.map((img) => (
                 <div className="project-page__thumb-card" key={img._id}>
-                  <img
-                    className="project-page__thumb"
-                    src={getFinalSrc(img)}
-                    alt={img.originalFilename || "Final upload"}
-                    loading="lazy"
-                  />
+                  <button
+                    type="button"
+                    className="project-page__thumb-button"
+                    onClick={() =>
+                      openSectionLightbox(
+                        finals,
+                        img._id,
+                        getFinalSrc,
+                        "Final image",
+                      )
+                    }
+                  >
+                    <img
+                      className="project-page__thumb"
+                      src={getFinalSrc(img)}
+                      alt={img.originalFilename || "Final upload"}
+                      loading="lazy"
+                    />
+                  </button>
                   <div className="project-page__thumb-overlay">
                     <p className="project-page__thumb-name">
                       {img.originalFilename || "Final image"}
@@ -387,6 +449,13 @@ const ProjectPage = () => {
           )}
         </section>
       </div>
+
+      <ImageLightbox
+        isOpen={isLightboxOpen}
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        onClose={() => setIsLightboxOpen(false)}
+      />
     </div>
   );
 };

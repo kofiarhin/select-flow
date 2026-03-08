@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import ImageLightbox from "../../components/ImageLightbox/ImageLightbox";
 import { useGallery, useSaveSelection } from "../../hooks/useGallery";
 import "./GalleryPage.styles.scss";
 
@@ -11,6 +12,8 @@ const GalleryPage = () => {
   const { data, isLoading, isError, error } = useGallery(clientAccessToken);
   const save = useSaveSelection(clientAccessToken);
   const [selected, setSelected] = useState([]);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const project = data?.project ?? null;
   const images = data?.images ?? [];
@@ -52,6 +55,26 @@ const GalleryPage = () => {
     if (!filename) return "";
 
     return `${apiUrl}/api/assets/${assetType}/${project._id}/${filename}?token=${clientAccessToken}`;
+  };
+
+  const lightboxImages = useMemo(
+    () =>
+      images
+        .map((img, index) => ({
+          id: img._id,
+          src: getImageSrc(img),
+          alt: `${project?.name || "Gallery"} ${index + 1}`,
+          label: img.originalFilename || `Image ${index + 1}`,
+        }))
+        .filter((img) => Boolean(img.src)),
+    [images, project, isFinal, apiUrl, clientAccessToken],
+  );
+
+  const handleOpenPreview = (imageId) => {
+    const index = lightboxImages.findIndex((img) => img.id === imageId);
+    if (index < 0) return;
+    setLightboxIndex(index);
+    setIsLightboxOpen(true);
   };
 
   const handleSaveSelection = () => {
@@ -107,17 +130,13 @@ const GalleryPage = () => {
 
             <div className="gallery-page__meta-card">
               <span className="gallery-page__meta-label">Images</span>
-              <span className="gallery-page__meta-value">
-                {imageCountLabel}
-              </span>
+              <span className="gallery-page__meta-value">{imageCountLabel}</span>
             </div>
 
             {!isFinal && (
               <div className="gallery-page__meta-card">
                 <span className="gallery-page__meta-label">Selected</span>
-                <span className="gallery-page__meta-value">
-                  {selected.length}
-                </span>
+                <span className="gallery-page__meta-value">{selected.length}</span>
               </div>
             )}
           </div>
@@ -126,10 +145,11 @@ const GalleryPage = () => {
         <div className="gallery-page__toolbar">
           <div className="gallery-page__toolbar-text">
             {isFinal ? (
-              <p>Browse your final images below.</p>
+              <p>Browse your final images below. Click any image to preview.</p>
             ) : (
               <p>
-                Click any thumbnail to add or remove it from your selection.
+                Click an image to preview. Use the Select button to add or remove
+                it from your selection.
               </p>
             )}
           </div>
@@ -169,33 +189,41 @@ const GalleryPage = () => {
               const isSelected = selected.includes(img._id);
 
               return (
-                <button
+                <article
                   key={img._id}
-                  type="button"
                   className={`gallery-page__thumb ${
                     isSelected ? "gallery-page__thumb--active" : ""
                   }`}
-                  onClick={() => toggleSelection(img._id)}
-                  disabled={isFinal}
-                  aria-pressed={isSelected}
                 >
-                  <div className="gallery-page__thumb-image-wrap">
+                  <button
+                    type="button"
+                    className="gallery-page__thumb-image-wrap"
+                    onClick={() => handleOpenPreview(img._id)}
+                    aria-label={`Preview ${img.originalFilename || `image ${index + 1}`}`}
+                  >
                     <img
                       className="gallery-page__thumb-image"
                       src={getImageSrc(img)}
                       alt={`${project.name} ${index + 1}`}
                       loading="lazy"
                     />
-                  </div>
+                  </button>
 
                   {!isFinal && (
-                    <div className="gallery-page__thumb-overlay">
-                      <span className="gallery-page__thumb-badge">
+                    <div className="gallery-page__thumb-actions">
+                      <button
+                        type="button"
+                        className={`gallery-page__select-btn ${
+                          isSelected ? "gallery-page__select-btn--active" : ""
+                        }`}
+                        onClick={() => toggleSelection(img._id)}
+                        aria-pressed={isSelected}
+                      >
                         {isSelected ? "Selected" : "Select"}
-                      </span>
+                      </button>
                     </div>
                   )}
-                </button>
+                </article>
               );
             })}
           </div>
@@ -206,6 +234,31 @@ const GalleryPage = () => {
           </div>
         )}
       </div>
+
+      <ImageLightbox
+        isOpen={isLightboxOpen}
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        onClose={() => setIsLightboxOpen(false)}
+        renderActions={(activeImage) => {
+          if (isFinal) return null;
+
+          const isSelected = selected.includes(activeImage.id);
+
+          return (
+            <button
+              type="button"
+              className={`gallery-page__lightbox-select ${
+                isSelected ? "gallery-page__lightbox-select--active" : ""
+              }`}
+              onClick={() => toggleSelection(activeImage.id)}
+              aria-pressed={isSelected}
+            >
+              {isSelected ? "Selected" : "Select"}
+            </button>
+          );
+        }}
+      />
     </div>
   );
 };

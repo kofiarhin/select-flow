@@ -429,6 +429,15 @@
     background: #0b0e13;
   }
 
+  &__thumb-button {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+  }
+
   &__thumb-overlay {
     position: absolute;
     inset: auto 0 0 0;
