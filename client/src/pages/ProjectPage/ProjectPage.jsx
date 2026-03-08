@@ -45,10 +45,78 @@ const ProjectPage = () => {
 
   const upload = async (e, mutation) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length || mutation.isPending) return;
+    const isActive = mutation.stage === "uploading" || mutation.stage === "processing";
+    if (!files.length || mutation.isPending || isActive) return;
 
-    await mutation.mutateAsync(files);
-    e.target.value = "";
+    try {
+      await mutation.mutateAsync(files);
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const isAnyUploadActive =
+    uploadOriginals.stage === "uploading" ||
+    uploadOriginals.stage === "processing" ||
+    uploadFinals.stage === "uploading" ||
+    uploadFinals.stage === "processing";
+
+  const renderUploadStatus = (uploadMutation, typeLabel) => {
+    if (uploadMutation.stage === "idle") return null;
+
+    const isUploading = uploadMutation.stage === "uploading";
+    const isProcessing = uploadMutation.stage === "processing";
+    const isSuccess = uploadMutation.stage === "success";
+    const isError = uploadMutation.stage === "error";
+    const statusClass = isError
+      ? "project-page__upload-status project-page__upload-status--error"
+      : isSuccess
+        ? "project-page__upload-status project-page__upload-status--success"
+        : "project-page__upload-status project-page__upload-status--active";
+
+    return (
+      <div className={statusClass}>
+        {(isUploading || isProcessing) && (
+          <div className="project-page__upload-status-head">
+            <span className="project-page__upload-spinner" aria-hidden="true" />
+            <span>{uploadMutation.message}</span>
+            {isUploading && uploadMutation.progress > 0 && (
+              <span className="project-page__upload-percent">
+                {uploadMutation.progress}%
+              </span>
+            )}
+          </div>
+        )}
+
+        {isUploading && (
+          <>
+            <div className="project-page__upload-progress" aria-hidden="true">
+              <span
+                className="project-page__upload-progress-fill"
+                style={{ width: `${uploadMutation.progress || 0}%` }}
+              />
+            </div>
+            <span className="project-page__upload-progress-text">
+              {uploadMutation.progress > 0
+                ? `${uploadMutation.progress}% uploaded`
+                : `Uploading ${typeLabel}...`}
+            </span>
+          </>
+        )}
+
+        {isProcessing && (
+          <div className="project-page__upload-progress project-page__upload-progress--processing" />
+        )}
+
+        {isSuccess && (
+          <p className="project-page__upload-result">{uploadMutation.message}</p>
+        )}
+
+        {isError && (
+          <p className="project-page__upload-result">{uploadMutation.message}</p>
+        )}
+      </div>
+    );
   };
 
   const API_URL = import.meta.env.VITE_API_URL || "";
@@ -228,8 +296,10 @@ const ProjectPage = () => {
             <input
               type="file"
               multiple
+              disabled={isAnyUploadActive}
               onChange={(e) => upload(e, uploadOriginals)}
             />
+            {renderUploadStatus(uploadOriginals, "originals")}
           </label>
 
           <label className="project-page__upload-card">
@@ -240,8 +310,10 @@ const ProjectPage = () => {
             <input
               type="file"
               multiple
+              disabled={isAnyUploadActive}
               onChange={(e) => upload(e, uploadFinals)}
             />
+            {renderUploadStatus(uploadFinals, "finals")}
           </label>
         </section>
 
