@@ -7,7 +7,9 @@ const projectSchema = new mongoose.Schema(
     photographerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Photographer', required: true, index: true },
     name: { type: String, required: true, trim: true },
     status: { type: String, enum: PROJECT_STATUSES, default: 'AWAITING_SELECTION' },
-    clientAccessToken: { type: String, required: true, unique: true, index: true }
+    clientAccessToken: { type: String, required: true, unique: true, index: true },
+    selectionSubmittedAt: { type: Date, default: null },
+    selectionLocked: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

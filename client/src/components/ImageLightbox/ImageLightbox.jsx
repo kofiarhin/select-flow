@@ -24,10 +24,17 @@ const ImageLightbox = ({
     setActiveIndex(getSafeIndex(initialIndex, totalImages));
   }, [isOpen, initialIndex, totalImages]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveIndex((prev) => getSafeIndex(prev, totalImages));
+  }, [isOpen, totalImages]);
+
+  const safeIndex = getSafeIndex(activeIndex, totalImages);
+
   const activeImage = useMemo(() => {
     if (!totalImages) return null;
-    return images[getSafeIndex(activeIndex, totalImages)] ?? null;
-  }, [activeIndex, images, totalImages]);
+    return images[safeIndex] ?? null;
+  }, [images, safeIndex, totalImages]);
 
   const canNavigate = totalImages > 1;
 
@@ -121,7 +128,7 @@ const ImageLightbox = ({
         <div className="image-lightbox__footer">
           <div className="image-lightbox__meta">
             <span className="image-lightbox__counter">
-              {activeIndex + 1} / {totalImages}
+              {safeIndex + 1} / {totalImages}
             </span>
             <span className="image-lightbox__label">
               {activeImage.label || activeImage.alt || "Untitled image"}
@@ -129,7 +136,7 @@ const ImageLightbox = ({
           </div>
           {renderActions ? (
             <div className="image-lightbox__actions">
-              {renderActions(activeImage, activeIndex)}
+              {renderActions(activeImage, safeIndex)}
             </div>
           ) : null}
         </div>

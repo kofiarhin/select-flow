@@ -4,6 +4,7 @@ const {
   listProjects,
   getProject,
   patchStatus,
+  reopenSelection,
   uploadOriginals,
   uploadFinals,
   deleteProject,
@@ -19,6 +20,7 @@ router.post('/', createProject);
 router.get('/', listProjects);
 router.get('/:id', getProject);
 router.patch('/:id/status', patchStatus);
+router.patch('/:id/reopen-selection', reopenSelection);
 router.delete('/:id', deleteProject);
 router.post('/:id/upload/originals', uploadLimiter, upload.array('files', 500), uploadOriginals);
 router.post('/:id/upload/finals', uploadLimiter, upload.array('files', 500), uploadFinals);

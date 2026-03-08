@@ -24,4 +24,15 @@ const useSaveSelection = (token) => {
   });
 };
 
-export { useGallery, useSaveSelection };
+const useSubmitSelection = (token) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => (await api.post(`/api/gallery/${token}/submit`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gallery", token] });
+    },
+  });
+};
+
+export { useGallery, useSaveSelection, useSubmitSelection };

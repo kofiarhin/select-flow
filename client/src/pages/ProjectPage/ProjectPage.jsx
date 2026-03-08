@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   useDeleteProject,
   useProject,
+  useReopenSelection,
   useUploadProjectFiles,
 } from "../../hooks/useProjects";
 import api from "../../services/api";
@@ -15,6 +16,7 @@ const ProjectPage = () => {
   const { data, isLoading, isError, error } = useProject(id);
   const uploadOriginals = useUploadProjectFiles(id, "originals");
   const uploadFinals = useUploadProjectFiles(id, "finals");
+  const reopenSelection = useReopenSelection(id);
   const deleteProject = useDeleteProject(id);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -75,14 +77,25 @@ const ProjectPage = () => {
     return `${API_URL}/api/assets/finals/${project._id}/${storageFile}?token=${project.clientAccessToken}`;
   };
 
-  const openSectionLightbox = (sectionImages, imageId, srcGetter, fallbackLabel) => {
+  const openSectionLightbox = (
+    sectionImages,
+    imageId,
+    srcGetter,
+    fallbackLabel,
+    allowDownload,
+  ) => {
     const mapped = sectionImages
-      .map((img) => ({
-        id: img._id,
-        src: srcGetter(img),
-        label: img.originalFilename || fallbackLabel,
-        alt: img.originalFilename || fallbackLabel,
-      }))
+      .map((img) => {
+        const src = srcGetter(img);
+
+        return {
+          id: img._id,
+          src,
+          label: img.originalFilename || fallbackLabel,
+          alt: img.originalFilename || fallbackLabel,
+          downloadUrl: allowDownload ? src : null,
+        };
+      })
       .filter((img) => Boolean(img.src));
 
     if (!mapped.length) return;
@@ -137,6 +150,23 @@ const ProjectPage = () => {
     }
   };
 
+  const handleReopenSelection = async () => {
+    if (reopenSelection.isPending) return;
+
+    try {
+      await reopenSelection.mutateAsync();
+    } catch (reopenError) {
+      console.error("Reopen selection failed:", reopenError);
+      alert(
+        reopenError?.response?.data?.message ||
+          "Unable to reopen selection for this project.",
+      );
+    }
+  };
+
+  const isSelectionSubmitted =
+    Boolean(project.selectionLocked) || Boolean(project.selectionSubmittedAt);
+
   return (
     <div className="project-page">
       <div className="project-page__shell">
@@ -154,16 +184,14 @@ const ProjectPage = () => {
               </div>
 
               <div className="project-page__meta-item">
-                <span className="project-page__meta-label">
-                  Client Selections
-                </span>
+                <span className="project-page__meta-label">Client Selections</span>
                 <span className="project-page__meta-value">{selectedCount}</span>
               </div>
 
               <div className="project-page__meta-item">
-                <span className="project-page__meta-label">Originals</span>
+                <span className="project-page__meta-label">Selection State</span>
                 <span className="project-page__meta-value">
-                  {originals.length}
+                  {isSelectionSubmitted ? "Submitted / Locked" : "Not submitted"}
                 </span>
               </div>
 
@@ -195,10 +223,21 @@ const ProjectPage = () => {
               disabled={!selectedCount || isDownloading}
               onClick={handleDownloadSelected}
             >
-              {isDownloading
-                ? "Preparing Download..."
-                : "Download Selected ZIP"}
+              {isDownloading ? "Preparing Download..." : "Download Selected ZIP"}
             </button>
+
+            {isSelectionSubmitted && project.status !== "FINAL_DELIVERED" && (
+              <button
+                type="button"
+                className="project-page__reopen-btn"
+                onClick={handleReopenSelection}
+                disabled={reopenSelection.isPending}
+              >
+                {reopenSelection.isPending
+                  ? "Reopening..."
+                  : "Reopen Selection"}
+              </button>
+            )}
           </div>
         </section>
 
@@ -324,6 +363,7 @@ const ProjectPage = () => {
                         img._id,
                         getOriginalSrc,
                         "Selected original",
+                        true,
                       )
                     }
                   >
@@ -335,9 +375,7 @@ const ProjectPage = () => {
                     />
                   </button>
                   <div className="project-page__thumb-overlay">
-                    <span className="project-page__selection-badge">
-                      Selected
-                    </span>
+                    <span className="project-page__selection-badge">Selected</span>
                     <p className="project-page__thumb-name">
                       {img.originalFilename || "Original image"}
                     </p>
@@ -346,9 +384,7 @@ const ProjectPage = () => {
               ))}
             </div>
           ) : (
-            <p className="project-page__empty">
-              No client selections saved yet.
-            </p>
+            <p className="project-page__empty">No client selections saved yet.</p>
           )}
         </section>
 
@@ -374,6 +410,7 @@ const ProjectPage = () => {
                         img._id,
                         getOriginalSrc,
                         "Original image",
+                        true,
                       )
                     }
                   >
@@ -386,9 +423,7 @@ const ProjectPage = () => {
                   </button>
                   <div className="project-page__thumb-overlay">
                     {img.isSelected && (
-                      <span className="project-page__selection-badge">
-                        Selected
-                      </span>
+                      <span className="project-page__selection-badge">Selected</span>
                     )}
                     <p className="project-page__thumb-name">
                       {img.originalFilename || "Original image"}
@@ -398,9 +433,7 @@ const ProjectPage = () => {
               ))}
             </div>
           ) : (
-            <p className="project-page__empty">
-              No original images uploaded yet.
-            </p>
+            <p className="project-page__empty">No original images uploaded yet.</p>
           )}
         </section>
 
@@ -426,6 +459,7 @@ const ProjectPage = () => {
                         img._id,
                         getFinalSrc,
                         "Final image",
+                        true,
                       )
                     }
                   >
@@ -455,6 +489,19 @@ const ProjectPage = () => {
         images={lightboxImages}
         initialIndex={lightboxIndex}
         onClose={() => setIsLightboxOpen(false)}
+        renderActions={(activeImage) => {
+          if (!activeImage?.downloadUrl) return null;
+
+          return (
+            <a
+              className="project-page__lightbox-download"
+              href={activeImage.downloadUrl}
+              download
+            >
+              Download
+            </a>
+          );
+        }}
       />
     </div>
   );

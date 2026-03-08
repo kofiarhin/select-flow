@@ -44,6 +44,19 @@ const useUploadProjectFiles = (id, route) => {
   });
 };
 
+const useReopenSelection = (id) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () =>
+      (await api.patch(`/api/projects/${id}/reopen-selection`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+};
+
 const useDeleteProject = (id) => {
   const queryClient = useQueryClient();
 
@@ -61,5 +74,6 @@ export {
   useCreateProject,
   useProject,
   useUploadProjectFiles,
+  useReopenSelection,
   useDeleteProject,
 };
