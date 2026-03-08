@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import api from "../services/api";
 
 const useProjects = () =>
@@ -25,8 +26,27 @@ const useProject = (id) =>
 
 const useUploadProjectFiles = (id, route) => {
   const queryClient = useQueryClient();
+  const [uploadUi, setUploadUi] = useState({
+    progress: 0,
+    stage: "idle",
+    message: "",
+    fileCount: 0,
+    uploadedCount: 0,
+  });
 
-  return useMutation({
+  const label = route === "originals" ? "originals" : "finals";
+
+  const resetUploadUi = useCallback(() => {
+    setUploadUi({
+      progress: 0,
+      stage: "idle",
+      message: "",
+      fileCount: 0,
+      uploadedCount: 0,
+    });
+  }, []);
+
+  const mutation = useMutation({
     mutationFn: async (files) => {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
@@ -34,14 +54,89 @@ const useUploadProjectFiles = (id, route) => {
       return (
         await api.post(`/api/projects/${id}/upload/${route}`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (event) => {
+            setUploadUi((current) => {
+              if (!event.total) {
+                return {
+                  ...current,
+                  stage: "uploading",
+                  message: `Uploading ${label}...`,
+                };
+              }
+
+              const progress = Math.min(
+                100,
+                Math.round((event.loaded * 100) / event.total),
+              );
+
+              if (progress >= 100) {
+                return {
+                  ...current,
+                  progress: 100,
+                  stage: "processing",
+                  message: `Processing ${label}...`,
+                };
+              }
+
+              return {
+                ...current,
+                progress,
+                stage: "uploading",
+                message: `Uploading ${label}...`,
+              };
+            });
+          },
         })
       ).data.data;
     },
-    onSuccess: () => {
+    onMutate: (files) => {
+      setUploadUi({
+        progress: 0,
+        stage: "uploading",
+        message: `Uploading ${label}...`,
+        fileCount: files.length,
+        uploadedCount: 0,
+      });
+    },
+    onSuccess: (response, files) => {
+      const uploadedCount = Array.isArray(response)
+        ? response.length
+        : response?.uploadedCount || files?.length || 0;
+
+      setUploadUi((current) => ({
+        ...current,
+        progress: 100,
+        stage: "success",
+        uploadedCount,
+        message:
+          uploadedCount > 0
+            ? `${label === "originals" ? "Originals" : "Finals"} uploaded successfully (${uploadedCount} file${uploadedCount === 1 ? "" : "s"})`
+            : `${label === "originals" ? "Originals" : "Finals"} uploaded successfully`,
+      }));
+
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
+    onError: (uploadError) => {
+      setUploadUi((current) => ({
+        ...current,
+        stage: "error",
+        message:
+          uploadError?.response?.data?.message ||
+          `Unable to upload ${label}. Please try again.`,
+      }));
+    },
   });
+
+  return {
+    ...mutation,
+    progress: uploadUi.progress,
+    stage: uploadUi.stage,
+    message: uploadUi.message,
+    fileCount: uploadUi.fileCount,
+    uploadedCount: uploadUi.uploadedCount,
+    resetUploadUi,
+  };
 };
 
 const useReopenSelection = (id) => {
